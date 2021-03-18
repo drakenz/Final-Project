@@ -1,0 +1,110 @@
+import threading
+
+
+#Read image from ESP
+
+import cv2
+import urllib.request
+import numpy as np
+
+
+lastFrame = []
+
+def LoadingImageThread():
+    global lastFrame
+    with urllib.request.urlopen('http://192.168.1.17:81/stream') as stream:
+        bytes = bytearray()
+
+        while True:
+            bytes += stream.read(1024)
+            a = bytes.find(b'\xff\xd8')
+            b = bytes.find(b'\xff\xd9')
+            if a != -1 and b != -1:
+                jpg = bytes[a:b + 2]
+                bytes = bytes[b + 2:]
+                try:
+                    lastFrame = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                except:
+                    # print("Lost Frame")
+                    continue
+
+
+
+#Server Code
+import sys
+import socket
+import selectors
+import types
+import cv2
+import numpy as np
+
+
+def ServerThread():
+    global lastFrame
+    sel = selectors.DefaultSelector()
+
+    def accept_wrapper(sock):
+        conn, addr = sock.accept()  # Should be ready to read
+        print("accepted connection from", addr)
+        conn.setblocking(False)
+        data = types.SimpleNamespace(addr=addr, inb=b"", outb=b"")
+        events = selectors.EVENT_READ | selectors.EVENT_WRITE
+        sel.register(conn, events, data=data)
+
+
+    def service_connection(key, mask):
+        sock = key.fileobj
+        data = key.data
+        if mask & selectors.EVENT_READ:
+            recv_data = sock.recv(1024)  # Should be ready to read
+            if recv_data:
+                data.outb += recv_data
+            else:
+                print("closing connection to", data.addr)
+                sel.unregister(sock)
+                sock.close()
+        if mask & selectors.EVENT_WRITE:
+            if data.outb:
+                #while True:
+                    #try:
+                print("echoing", repr(data.outb), "to", data.addr)
+                img_str = cv2.imencode('.jpg', lastFrame)[1]
+                igme_str = bytearray(img_str)
+                sent = sock.send  # Should be ready to write
+                data.outb = data.outb[sent:]
+                   # except:
+                      #  continue
+
+    host = '192.168.1.140'  # Standard loopback interface address (localhost)
+    port = 65432         # Port to listen on (non-privileged ports are > 1023)
+
+    lsock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    lsock.bind((host, port))
+    lsock.listen()
+    print("listening on", (host, port))
+    lsock.setblocking(False)
+    sel.register(lsock, selectors.EVENT_READ, data=None)
+
+    while True:
+        try:
+            events = sel.select(timeout=None)
+            for key, mask in events:
+                if key.data is None:
+                    accept_wrapper(key.fileobj)
+                else:
+                    service_connection(key, mask)
+        except:
+            print("Crashed")
+            #sel.close()
+            sel.register(lsock, selectors.EVENT_READ, data=None)
+            continue
+
+
+
+#Let's try to thread this shit
+espThread = threading.Thread(target=LoadingImageThread)
+espThread.start()
+
+
+serverThread = threading.Thread(target=ServerThread)
+serverThread.start()
