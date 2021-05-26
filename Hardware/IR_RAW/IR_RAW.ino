@@ -1,44 +1,114 @@
 #include "ESP32_IR_Remote.h"
+#include "EspMQTTClient.h"
 
-const int RECV_PIN = 17; // pin on the ESP32
-const int SEND_PIN = 2; // pin on the ESP32
-
+EspMQTTClient client(
+  "Slow Internet Here",
+  "Superman!",
+  "192.168.1.109",  // MQTT Broker server ip
+  "admin",
+  "admin",
+  "IR Module",     // Client name that uniquely identify your device
+  1883              // The MQTT port, default to 1883. this line can be omitted
+);
+//Pins and IR init
+const int RECV_PIN = 17;
+const int SEND_PIN = 2;
 
 ESP32_IRrecv irrecv;
 
-#define SendIRxTimes 1
+//Data Array
+unsigned int IRData[11][1000];
+int codeLen[11];
 
+//Reading data at INIT
+bool readData = false;
+int myIndex;
 
-
-unsigned int IRdata[1000]; //holding IR code in ms
+//Sending data with IR
+bool sendData = false;
+int sendIndex;
 
 void setup() {
   Serial.begin(115200);
-  irrecv.ESP32_IRrecvPIN(RECV_PIN, 0); //channel 0 so it can use the full memory of the channels
-  Serial.println("Initializing...");
-  irrecv.initReceive();
-  Serial.println("Init complete");
-  Serial.println("Send an IR to Copy");
+
+  client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
+  client.enableHTTPWebUpdater();
+  client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
+
+  Serial.println("ESP is running!");
 }
 
+void onConnectionEstablished()
+{
+  client.subscribe("IR/Init", [](const String & payload) {
+    if (payload != "Done") {
+      readData = true;
+      myIndex = payload.toInt();
+    }
+    Serial.println(payload);
+  });
+  client.subscribe("IR/Send", [](const String & payload) {
+    sendData = true;
+    sendIndex = payload.toInt();
+    Serial.println(payload);
+  });
+}
+
+void ReceiveIR() {
+  Serial.println("Ready to receive!");
+  irrecv.ESP32_IRrecvPIN(RECV_PIN, 0); //channel 0 so it can use the full memory of the channels
+  irrecv.initReceive(); //setup the ESP32 to Receive IR code
+
+  while (true) {
+    codeLen[myIndex] = 0;
+    codeLen[myIndex] = irrecv.readIR(IRData[myIndex], sizeof(IRData[myIndex]));
+    if (codeLen[myIndex] > 6) {
+      break;
+    }
+  }
+  Serial.print("Recieved data with RAW code length: ");
+  Serial.println(codeLen[myIndex]);
+
+  Serial.print("At Index : ");
+  Serial.println(myIndex);
+  irrecv.stopIR(); //uninstall the RMT channel so it can be reused for Receiving IR or send IR
+}
+
+void SendIR() {
+  Serial.println("Sending now!");
+
+  irrecv.ESP32_IRsendPIN(SEND_PIN, 0); //channel 0 so it can use the full memory of the channels
+  irrecv.initSend(); //setup the ESP32 to send IR code
+  delay(1000);
+  irrecv.sendIR(IRData[sendIndex], codeLen[sendIndex]);
+  delay(1000);
+
+  Serial.println("Data sent!");
+  irrecv.stopIR(); //uninstall the RMT channel so it can be reused for Receiving IR or send IR
+}
+
+void printArr() {
+  for (int i = 0 ; i < 11 ; i++)
+  {
+    for (int j = 0 ; j < 1000 ; j++)
+    {
+      Serial.print(IRData[i][j]);
+      Serial.print(" ");
+    }
+    Serial.println("");
+  }
+}
 
 void loop() {
-  int codeLen = 0;
-  codeLen = irrecv.readIR(IRdata, sizeof(IRdata));
-  if (codeLen > 6) { //ignore any short codes
-    Serial.print("RAW code length: ");
-    Serial.println(codeLen);
-    irrecv.stopIR(); //uninstall the RMT channel so it can be reused for Receiving IR or send IR
-    irrecv.ESP32_IRsendPIN(SEND_PIN, 0); //channel 0 so it can use the full memory of the channels
-    irrecv.initSend(); //setup the ESP32 to send IR code
-    delay(1000);
-    for (int x = 0; x < SendIRxTimes; x++) { //send IR code that was recorded
-      irrecv.sendIR(IRdata, codeLen);
-      delay(1000);
-    }
-    codeLen = 0;
-    irrecv.stopIR(); //uninstall the RMT channel so it can be reused for Receiving IR or send IR
-    irrecv.ESP32_IRrecvPIN(RECV_PIN, 0); //channel 0 so it can use the full memory of the channels
-    irrecv.initReceive(); //setup the ESP32 to Receive IR code
+  if (readData) {
+    readData = false;
+    ReceiveIR();
+    client.publish("IR/Init", "Done");
+    printArr();
   }
+  if (sendData) {
+    sendData = false;
+    SendIR();    
+  }
+  client.loop();
 }
