@@ -3,42 +3,60 @@ import face_recognition
 import pickle
 import cv2
 import paho.mqtt.client as mqtt
+from datetime import datetime, timedelta
+import glob
 
-
-# TODO: SET A TIMEOUT
-# TODO: MAKE PATHS RELATIVE
 # TODO: Load all faces in known folder
-# TODO: Remove inits from findFace()
+
 
 def findFace():
     cap = cv2.VideoCapture("http://192.168.1.15:8080/video")
 
-    knownPATH = "known/"
     unknownPATH = "unknown/"
+
+    files = []
+    for file in glob.glob("known/*.jpg"):
+        files.append(file)
+
+    known_face_encodings = []  # array of known face encodings
+    known_face_names = []  # and their names
+
+    # Get all photos in known folder and
+    for file in files:
+        img = face_recognition.load_image_file(file)
+        img_encoding = face_recognition.face_encodings(img)[0]
+        known_face_encodings.append(img_encoding)
+        known_face_names.append(file)
 
     # imagePath = "C:/Users/hazem/Desktop/FaceDetection/FaceDetect-master/FaceDetect-master/mo2a1.jpg"
     # cascPath = "C:/Users/hazem/Desktop/FaceDetection/FaceDetect-master/FaceDetect-master/haarcascade_frontalface_default.xml"
     # faceCascade = cv2.CascadeClassifier(cascPath)
 
     # Load a picture and learn how to recognize it.
-    hazem_image = face_recognition.load_image_file(
-        "known/hazem.jpg")
-    hazem_face_encoding = face_recognition.face_encodings(hazem_image)[0]
+    # hazem_image = face_recognition.load_image_file(
+    #    "known/hazem.jpg")
+    #hazem_face_encoding = face_recognition.face_encodings(hazem_image)[0]
 
     # Create arrays of known face encodings and their names
-    known_face_encodings = [
-        hazem_face_encoding,
-    ]
-    known_face_names = [
-        "Hazem",
-    ]
+    # known_face_encodings = [
+    #    hazem_face_encoding,
+    # ]
+    # known_face_names = [
+    #    "Hazem",
+    # ]
 
     unknown_face_encodings = []
     with open('unknown/unknown_face_encodings.dat', 'rb') as f:
         unknown_face_encodings = pickle.load(f)
     count_number = 0
 
+    stopTime = datetime.now() + timedelta(seconds=30)
+
     while True:
+        if(datetime.now() > stopTime):
+            cv2.destroyAllWindows()
+            return
+
         ret, frame = cap.read()
 
         frame_grey = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
