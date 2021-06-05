@@ -4,7 +4,7 @@
 EspMQTTClient client(
   "Slow Internet Here",
   "Superman!",
-  "192.168.1.16",  // MQTT Broker server ip
+  "192.168.1.19",  // MQTT Broker server ip
   "admin",
   "admin",
   "Door Module",     // Client name that uniquely identify your device
@@ -13,6 +13,7 @@ EspMQTTClient client(
 
 //Pins
 const int Door_PIN = 26;
+const int PIRPIN = 23;
 
 //keypad Data
 #include <ErriezTTP229.h>
@@ -30,7 +31,8 @@ int pw = 1234;
 int key;
 int inpw;
 
-int timeout = 0;
+int pir;
+int prevpir;
 
 void keyChange()
 {
@@ -48,7 +50,8 @@ void setup() {
   attachInterrupt(digitalPinToInterrupt(TTP229_SDO_PIN), keyChange, FALLING);
 
 
-  pinMode (Door_PIN, OUTPUT);
+  pinMode(Door_PIN, OUTPUT);
+  pinMode(PIRPIN, INPUT);
   Serial.println("ESP is running!");
 }
 
@@ -63,7 +66,7 @@ void onConnectionEstablished()
 
 void openDoor() {
   Serial.println("Opening Door");
-  client.publish("Door/State", "1");
+  //client.publish("Door/State", "1");
   digitalWrite(Door_PIN, HIGH);
 
   delay(5000);
@@ -76,10 +79,11 @@ void loop() {
   if (ttp229.keyChange) {
     int key = ttp229.GetKey16();
     if (key != 0) {
-
+      key -= 8;
       if (key > 9) {
         inpw = 0;
         delay(100); //for serial monitor only 3ashan bttb3 kteer
+        Serial.print(key);
         Serial.println("Cleared!");
         return;
       }
@@ -104,7 +108,12 @@ void loop() {
     }
     ttp229.keyChange = false;
   }
-
+  pir = digitalRead(PIRPIN);
+  if (pir == 1 && prevpir == 0) {
+    client.publish("Door/PIR", "1");
+    Serial.print("PIR DETECTED MOVEMENT!");
+  }
+  prevpir = pir;
   delay(10);
   client.loop();
 }
