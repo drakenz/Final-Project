@@ -4,12 +4,13 @@
 EspMQTTClient client(
   "Slow Internet Here",
   "Superman!",
-  "192.168.1.109",  // MQTT Broker server ip
+  "192.168.1.16",  // MQTT Broker server ip
   "admin",
   "admin",
   "IR Module",     // Client name that uniquely identify your device
   1883              // The MQTT port, default to 1883. this line can be omitted
 );
+
 //Pins and IR init
 const int RECV_PIN = 17;
 const int SEND_PIN = 2;
