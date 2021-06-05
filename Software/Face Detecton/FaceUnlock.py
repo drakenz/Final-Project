@@ -6,13 +6,11 @@ import paho.mqtt.client as mqtt
 from datetime import datetime, timedelta
 import glob
 
-# TODO: Load all faces in known folder
+# TODO: Fix unknown faces
 
 
 def findFace():
     cap = cv2.VideoCapture("http://192.168.1.15:8080/video")
-
-    unknownPATH = "unknown/"
 
     files = []
     for file in glob.glob("known/*.jpg"):
@@ -28,27 +26,12 @@ def findFace():
         known_face_encodings.append(img_encoding)
         known_face_names.append(file)
 
-    # imagePath = "C:/Users/hazem/Desktop/FaceDetection/FaceDetect-master/FaceDetect-master/mo2a1.jpg"
-    # cascPath = "C:/Users/hazem/Desktop/FaceDetection/FaceDetect-master/FaceDetect-master/haarcascade_frontalface_default.xml"
-    # faceCascade = cv2.CascadeClassifier(cascPath)
-
-    # Load a picture and learn how to recognize it.
-    # hazem_image = face_recognition.load_image_file(
-    #    "known/hazem.jpg")
-    #hazem_face_encoding = face_recognition.face_encodings(hazem_image)[0]
-
-    # Create arrays of known face encodings and their names
-    # known_face_encodings = [
-    #    hazem_face_encoding,
-    # ]
-    # known_face_names = [
-    #    "Hazem",
-    # ]
-
     unknown_face_encodings = []
     with open('unknown/unknown_face_encodings.dat', 'rb') as f:
         unknown_face_encodings = pickle.load(f)
-    count_number = 0
+    count_number = len(unknown_face_encodings)
+
+    print('We have : ', count_number, 'Unknown Images')
 
     stopTime = datetime.now() + timedelta(seconds=30)
 
@@ -141,8 +124,8 @@ def on_connect(client, userdata, flags, rc):
 
 def on_message(client, userdata, msg):
     if(msg.topic == 'Door/PIR'):
-        print(msg.payload.decode("utf-8"))
-        findFace()
+        if(msg.payload.decode("utf-8") == '1'):
+            findFace()
 
 
 broker_address = "192.168.1.19"
