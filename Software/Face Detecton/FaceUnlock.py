@@ -28,8 +28,12 @@ def findFace():
 
     unknown_face_encodings = []
     with open('unknown/unknown_face_encodings.dat', 'rb') as f:
-        unknown_face_encodings = pickle.load(f)
-    count_number = len(unknown_face_encodings)
+        try:  # Check if there are previous saved encodings
+            unknown_face_encodings = pickle.load(f)
+            count_number = len(unknown_face_encodings)
+        except:
+            count_number = 0
+            unknown_face_encodings = []
 
     print('We have : ', count_number, 'Unknown Images')
 
