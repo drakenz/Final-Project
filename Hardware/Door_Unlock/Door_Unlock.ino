@@ -34,6 +34,7 @@ int inpw;
 int pir;
 int prevpir;
 
+int timeout = 200;
 void keyChange()
 {
   ttp229.keyChange = true;
@@ -76,7 +77,14 @@ void openDoor() {
 }
 
 void loop() {
+  if (timeout > 0)
+    if (--timeout == 0) {
+      inpw = 0;
+      Serial.println("TIMED OUT");
+    }
+
   if (ttp229.keyChange) {
+    timeout = 200;
     int key = ttp229.GetKey16();
     if (key != 0) {
       key -= 8;
