@@ -10,7 +10,7 @@ import glob
 
 
 def findFace():
-    cap = cv2.VideoCapture("http://192.168.1.15:8080/video")
+    cap = cv2.VideoCapture("http://192.168.1.14:8080/video")
 
     files = []
     for file in glob.glob("known/*.jpg"):

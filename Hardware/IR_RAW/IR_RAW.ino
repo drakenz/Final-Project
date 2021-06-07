@@ -1,10 +1,17 @@
 #include "ESP32_IR_Remote.h"
 #include "EspMQTTClient.h"
 
+//For clearing NVS
+//#include <nvs_flash.h>
+//#include <esp_wifi.h>
+
+#include <Preferences.h>
+Preferences preferences;
+
 EspMQTTClient client(
   "Slow Internet Here",
   "Superman!",
-  "192.168.1.16",  // MQTT Broker server ip
+  "192.168.1.19",  // MQTT Broker server ip
   "admin",
   "admin",
   "IR Module",     // Client name that uniquely identify your device
@@ -18,7 +25,7 @@ const int SEND_PIN = 2;
 ESP32_IRrecv irrecv;
 
 //Data Array
-unsigned int IRData[11][1000];
+unsigned int IRData[11][500];
 int codeLen[11];
 
 //Reading data at INIT
@@ -31,6 +38,8 @@ int sendIndex;
 
 void setup() {
   Serial.begin(115200);
+
+  preferences.begin("IR", false);
 
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater();
@@ -52,6 +61,18 @@ void onConnectionEstablished()
     sendData = true;
     sendIndex = payload.toInt();
     Serial.println(payload);
+  });
+  client.subscribe("IR/Save", [](const String & payload) {
+    saveData();
+  });
+  client.subscribe("IR/Load", [](const String & payload) {
+    loadData();
+  });
+  client.subscribe("IR/Print", [](const String & payload) {
+    printArr();
+  });
+  client.subscribe("IR/Clear", [](const String & payload) {
+    clearPrefs();
   });
 }
 
@@ -89,15 +110,86 @@ void SendIR() {
 }
 
 void printArr() {
+  Serial.println("Codelen | Code");
   for (int i = 0 ; i < 11 ; i++)
   {
-    for (int j = 0 ; j < 1000 ; j++)
+    Serial.print(codeLen[i]);
+    Serial.print(" | ");
+
+    for (int j = 0 ; j < codeLen[i] + 1; j++)
     {
       Serial.print(IRData[i][j]);
       Serial.print(" ");
     }
     Serial.println("");
   }
+}
+
+void saveData()
+{
+  int key = 0;
+  char keyChar[16];
+  String myString = "";
+
+  for (int i = 0; i < 11; i++)
+  {
+    myString = ""; //Make a string of all Data (times) and save it as String
+    myString.concat(String(codeLen[i]));
+    myString.concat(" ");
+    if (codeLen[i] != 0)
+      for (int j = 0; j < codeLen[i] + 1; j++)
+      {
+        myString.concat(String(IRData[i][j]));
+        myString.concat(" ");
+      }
+    itoa(key, keyChar, 10); //Convert Key to Char * to give to saved prefs
+    preferences.putString(keyChar, myString);
+    key++;
+  }
+  Serial.println("Data Saved!");
+}
+
+void loadData()
+{
+  int key = 0;
+  char keyChar[16];
+  String myString = "";
+  for (int i = 0; i < 11; i++)
+  {
+    int j = 0;
+    itoa(key, keyChar, 10);
+    myString = preferences.getString(keyChar);
+
+    int str_len = myString.length() + 1;
+    char myStringChar[str_len];
+    myString.toCharArray(myStringChar, str_len);
+
+    char * token = strtok(myStringChar, " "); //Extract the first token
+    codeLen[i] = strtoull(token, NULL, 0);
+    if (codeLen[i] != 0) {
+      token = strtok(NULL, " ");
+      while ( token != NULL ) { // loop through the string to extract all other tokens
+        IRData[i][j] = strtoull(token, NULL, 0);
+        j++;
+
+        token = strtok(NULL, " "); //Remove Left most value
+      }
+    }
+    key++;
+  }
+  printArr();
+  Serial.println("Data Loaded!");
+}
+
+void clearPrefs() {
+  //To clear the NVS partition (Not recommended)
+  //nvs_flash_erase(); // erase the NVS partition and...
+  //nvs_flash_init(); // initialize the NVS partition.
+  //esp_wifi_clear_fast_connect(); //Wifi stores data in nvs
+
+  //Remove all preferences under the opened namespace
+  preferences.clear();
+  Serial.println("Cleared!");
 }
 
 void loop() {
@@ -109,7 +201,7 @@ void loop() {
   }
   if (sendData) {
     sendData = false;
-    SendIR();    
+    SendIR();
   }
   client.loop();
 }
