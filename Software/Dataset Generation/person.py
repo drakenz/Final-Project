@@ -40,7 +40,9 @@ class Person():
         period = self.month * 30
         for i in range(period): #period
             day = []
+            start_copy = self.start
             SleepTime, WakeupTime, BackFromWork , OtherRooms = self.generateDay()
+            
 
             while(self.start < WakeupTime):
                 day.append([str(self.start),1, 0])
@@ -66,7 +68,7 @@ class Person():
             self.dataset.append(day)
             
             
-            self.start += datetime.timedelta(days=1)
+            self.start = start_copy + datetime.timedelta(days=1)
             self.start = self.start.replace(hour=0, minute=0, second=0, microsecond=0)
         self.toCSV()
             
