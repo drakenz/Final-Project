@@ -45,6 +45,7 @@ void setup() {
   client.enableHTTPWebUpdater();
   client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
 
+  loadData();
   Serial.println("ESP is running!");
 }
 
@@ -68,12 +69,14 @@ void onConnectionEstablished()
   client.subscribe("IR/Load", [](const String & payload) {
     loadData();
   });
-  client.subscribe("IR/Print", [](const String & payload) {
+  /*
+    client.subscribe("IR/Print", [](const String & payload) {
     printArr();
-  });
-  client.subscribe("IR/Clear", [](const String & payload) {
+    });
+    client.subscribe("IR/Clear", [](const String & payload) {
     clearPrefs();
-  });
+    });
+  */
 }
 
 void ReceiveIR() {
