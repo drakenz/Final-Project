@@ -3,6 +3,7 @@ from pandas.core import algorithms
 from pomegranate import *
 import numpy as np
 import json
+import matplotlib.pyplot as plt
 
 #Edit Dataset Paths before Running
 print("Please Edit dataset paths before running")
@@ -85,8 +86,16 @@ print("Bad Seq: ",model.log_probability(rooms1[50]))
 #print("Bad Score: ", model.score(rooms1[0],state1[0]))
 
 x = []
-for i in range(10):
+for i in range(len(rooms)):
     x.append(model.log_probability(rooms[i]))
 x = np.asarray(x)
-print(x)
+
+y = []
+for i in range(len(rooms1)):
+    y.append(model.log_probability(rooms1[i]))
+y = np.asarray(y)
+plt.hist(x, bins=5)
+plt.show()
+plt.hist(y, bins=5)
+plt.show()
 #print(model.sample(length=288))
