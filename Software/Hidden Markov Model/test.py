@@ -96,6 +96,7 @@ for i in range(len(rooms1)):
 y = np.asarray(y)
 plt.hist(x, bins=5)
 plt.show()
-plt.hist(y, bins=5)
+plt.hist(y, bins=5
+)
 plt.show()
 #print(model.sample(length=288))
