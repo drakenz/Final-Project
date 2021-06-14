@@ -130,6 +130,7 @@ void printArr() {
 
 void saveData()
 {
+  clearPrefs();
   int key = 0;
   char keyChar[16];
   String myString = "";
