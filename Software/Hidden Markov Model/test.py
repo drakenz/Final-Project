@@ -6,48 +6,58 @@ import json
 
 #Edit Dataset Paths before Running
 print("Please Edit dataset paths before running")
-df = pd.read_csv('G:/generator/dataset.csv')
+df = pd.read_csv('D:\AAST\Final Project\Final-Project\Software\Hidden Markov Model\dataset.csv')
 pd.set_option("display.max_columns", None)
 df = df.drop("Time",axis=1)
 
-room_dataset1 = df.values.tolist()
+arr = df['Room'].to_numpy()
+arr_state = df['State'].to_numpy()
+train_len = len(df.index)
 rooms = []
 state = []
-str_rooms = ""
-str_states = ""
-for i in range(len(room_dataset1)):
-    str_rooms += str(room_dataset1[i][0])
-    str_states += str(room_dataset1[i][1])
-    if (i + 1) % 288 == 0 and i > 0:
-        list_rooms = np.array(list(str_rooms),dtype=int)
-        states = np.array(list(str_states),dtype=int)
-        rooms.append(list_rooms)
-        state.append(states)
-        str_rooms = ""
-        str_states = ""
-df1 = pd.read_csv('G:/generator/dataset1.csv')
 
+for i in range(0, train_len, 288):
+    sequence = arr[i:i+288]
+    sequence2 = arr_state[i:i+288]
+    sequence = np.asarray(sequence)
+    sequence2 = np.asarray(sequence2)
+    sequence = sequence.reshape(1,-1)
+    sequence2 = sequence2.reshape(1,-1)
+    rooms.append(sequence)
+    state.append(sequence2)
+
+rooms = np.asarray(rooms)
+state = np.asarray(state)
+rooms = rooms.reshape(rooms.shape[0], -1)
+state = state.reshape(state.shape[0], -1)
+
+df1 = pd.read_csv('D:\AAST\Final Project\Final-Project\Software\Hidden Markov Model\dataset1.csv')
 df1 = df1.drop("Time",axis=1)
 
-room_dataset2 = df1.values.tolist()
+arr = df1['Room'].to_numpy()
+arr_state = df1['State'].to_numpy()
+train_len = len(df1.index)
 rooms1 = []
 state1 = []
-str_rooms2 = ""
-str_states2 = ""
-for j in range(len(room_dataset2)):
-    str_rooms2 += str(room_dataset2[j][0])
-    str_states2 += str(room_dataset2[j][1])
-    if (j + 1) % 288 == 0 and j > 0:
-        list_rooms = np.array(list(str_rooms2),dtype=int)
-        states = np.array(list(str_states2),dtype=int)
-        rooms1.append(list_rooms)
-        state1.append(states)
-        str_rooms2 = ""
-        str_states2 = ""
+
+for i in range(0, train_len, 288):
+    sequence = arr[i:i+288]
+    sequence2 = arr_state[i:i+288]
+    sequence = np.asarray(sequence)
+    sequence2 = np.asarray(sequence2)
+    sequence = sequence.reshape(1,-1)
+    sequence2 = sequence2.reshape(1,-1)
+    rooms1.append(sequence)
+    state1.append(sequence2)
+
+rooms1 = np.asarray(rooms1)
+state1 = np.asarray(state1)
+rooms1 = rooms1.reshape(rooms1.shape[0], -1)
+state1 = state1.reshape(state1.shape[0], -1)
 
 #model = HiddenMarkovModel.from_samples(DiscreteDistribution,n_components = 2,X=rooms,verbose=True)
 #model.bake()
-with open("model.json") as json_file1:
+with open("D:\AAST\Final Project\Final-Project\Software\Hidden Markov Model\model.json") as json_file1:
     data = json.load(json_file1)
 model = HiddenMarkovModel.from_json(data)
 #model.fit(rooms,algorithm='baum-welch')
@@ -61,15 +71,22 @@ json1 = model.to_json()
 with open("model.json" , "w") as json_file:
     data = json.dump(json1 , json_file)
 '''
-print("Good Seq: ",model.log_probability(rooms[0]))
-print("Bad Seq: ",model.log_probability(rooms1[0]))
 rooms1 = np.asarray(rooms1)
 state1 = np.asarray(state1)
-rooms = np.asarray(rooms)
-state = np.asarray(state)
-#state1 = state1.reshape(-1, )
-print(rooms1.shape)
-print(state1.shape)
-print("Good Score: ", model.score(rooms[0],state[0]))
-print("Bad Score: ", model.score(rooms1[0],state1[0]))
+#rooms = np.asarray(rooms)
+#state = np.asarray(state)
+print(rooms[0])
+print("Good Seq: ",model.log_probability(rooms[0]))
+print(rooms[5])
+print("Good Seq2: ",model.log_probability(rooms[5]))
+print(rooms1[50])
+print("Bad Seq: ",model.log_probability(rooms1[50]))
+#print("Good Score: ", model.score(rooms[0],state[0]))
+#print("Bad Score: ", model.score(rooms1[0],state1[0]))
+
+x = []
+for i in range(10):
+    x.append(model.log_probability(rooms[i]))
+x = np.asarray(x)
+print(x)
 #print(model.sample(length=288))
