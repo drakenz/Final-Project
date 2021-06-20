@@ -9,6 +9,18 @@ import posenet
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from keras import backend as K
 import os
+import paho.mqtt.client as mqtt
+
+def on_connect(client, userdata, flags, rc):
+    print("Connected with result code ", str(rc))
+    client.subscribe('Pose')
+
+broker_address = "d6d3031dcc0d4918a87f4ebcc4644e68.s1.eu.hivemq.cloud"
+client = mqtt.Client("PoseServer")  # create new instance
+client.username_pw_set(username="hazem.moh98@gmail.com", password="HwPVV9fyN4CaYcs")
+client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
+client.on_connect = on_connect
+client.connect(broker_address, port=8883)
 
 print(__file__)
 dirname = os.path.dirname(__file__)
@@ -43,8 +55,12 @@ with tf.Graph().as_default():
         model_cfg, model_outputs = posenet.load_model(101, sess)
         output_stride = model_cfg['output_stride']
         while True:
-            input_image, display_image, output_scale = posenet.read_cap(cap, scale_factor=0.7125, output_stride=output_stride)
-
+            try:
+                input_image, display_image, output_scale = posenet.read_cap(cap, scale_factor=0.7125, output_stride=output_stride)
+            except Exception as e:
+                print(e)
+                continue
+            
             heatmaps_result, offsets_result, displacement_fwd_result, displacement_bwd_result = sess.run(model_outputs, feed_dict={'image:0': input_image})
 
             pose_scores, keypoint_scores, keypoint_coords = posenet.decode_multi.decode_multiple_poses(
@@ -101,7 +117,7 @@ with tf.Graph().as_default():
                         print("Sitting for: ",int(p_time), " Seconds" )
                         if (p_time >= 60):
                             print("Stand up or whatever!")
-                            #TODO: Mqtt to tell user to stand up through mobile notification
+                            client.publish("Pose", "1")
                             sitting = 0
                             label= "Stand up Man!!"
                     else:
@@ -121,5 +137,3 @@ with tf.Graph().as_default():
 
     print('Average FPS: ', frame_count / (time.time() - start))
     print('Frame Count: ', frame_count)
-
-
