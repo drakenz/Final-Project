@@ -4,7 +4,6 @@ import face_recognition
 import cv2
 import paho.mqtt.client as mqtt
 from datetime import datetime, timedelta
-import time
 import glob
 
 import base64
@@ -125,7 +124,6 @@ def findFace():
 
 def sendPhotos():
     for file in glob.glob("unknown/*.jpg"):
-        time.sleep(0.2)
         print(file)
         f = open(file, "rb")
         fileContent = f.read()
@@ -226,17 +224,15 @@ def on_message(client, userdata, msg):
         Delete(msg.payload.decode("utf-8"))
 
 
-broker_address = "d6d3031dcc0d4918a87f4ebcc4644e68.s1.eu.hivemq.cloud"
+broker_address = "ashhomeassistantmqtt.duckdns.org"
 
 client = mqtt.Client("DoorServer")  # create new instance
-client.username_pw_set(username="hazem.moh98@gmail.com",
-                       password="HwPVV9fyN4CaYcs")
-
-client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
+client.username_pw_set(username="homeassistant",
+                       password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")
 
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect(broker_address, port=8883)
+client.connect(broker_address, port=1883)
 
 # client.loop()
 print("LOOPING!")

@@ -1,14 +1,15 @@
 #include "EspMQTTClient.h"
 
 EspMQTTClient client(
-  "WE_B9EBA5",
-  "j9501114",
-  "192.168.1.16",  // MQTT Broker server ip
-  "homeassistant",   // Can be omitted if not needed
-  "few5thohPh6ohl8fahlazaKiwoocohchih3Puchoopoopheukaichiph1faquevo",   // Can be omitted if not needed
-  "Motion Detector",     // Client name that uniquely identify your device
+  "Slow Internet Here",
+  "Superman!",
+  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
+  "homeassistant",
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
+  "IR Module",     // Client name that uniquely identify your device
   1883              // The MQTT port, default to 1883. this line can be omitted
 );
+
 const int trigPinLe = 12;
 const int echoPinLe = 14;
 

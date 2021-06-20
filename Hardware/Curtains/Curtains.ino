@@ -4,10 +4,10 @@
 EspMQTTClient client(
   "Slow Internet Here",
   "Superman!",
-  "192.168.1.19",  // MQTT Broker server ip
-  "admin",
-  "admin",
-  "Curtains Module",     // Client name that uniquely identify your device
+  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
+  "homeassistant",
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
+  "IR Module",     // Client name that uniquely identify your device
   1883              // The MQTT port, default to 1883. this line can be omitted
 );
 
