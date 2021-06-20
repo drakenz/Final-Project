@@ -2,7 +2,10 @@ import tensorflow as tf
 import os
 import posenet.converter.config
 
-MODEL_DIR = './_models'
+dirname = os.path.dirname(__file__)
+dirname = dirname.replace('\\posenet', '')
+
+MODEL_DIR = os.path.join(dirname, '_models')
 DEBUG_OUTPUT = False
 
 

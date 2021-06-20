@@ -10,11 +10,10 @@ from sklearn.preprocessing import StandardScaler, MinMaxScaler
 from keras import backend as K
 import os
 
-print(os.path.isfile("data.txt"))
+print(__file__)
+dirname = os.path.dirname(__file__)
 pose_dict = {0: "Sitting", 1: "Standing"}
-data = np.loadtxt("data.txt").reshape(1599, 52)
-
-#prediction = model_mlp.predict(data)
+data = np.loadtxt(os.path.join(dirname, 'data.txt')).reshape(1599, 52)
 
 column_names = ['pose', 'nose', 'nose_coordX', 'nose_coordY', 'L_eye', 'L_eye_coordX', 'L_eye_coordY', 'R_eye',
                 'R_eye_coordX', 'R_eye_coordY', 'L_ear',
@@ -40,7 +39,7 @@ sitting = 0
 with tf.Graph().as_default():
     with tf.compat.v1.Session() as sess:
         K.set_session(sess)
-        model_mlp = load_model("Model4.h5")
+        model_mlp = load_model(os.path.join(dirname, 'Model4.h5'))
         model_cfg, model_outputs = posenet.load_model(101, sess)
         output_stride = model_cfg['output_stride']
         while True:
@@ -59,8 +58,6 @@ with tf.Graph().as_default():
             )
             keypoint_coords *= output_scale
 
-            #Drawing skeleton
-            #overlay_image = posenet.draw_skel_and_kp(display_image, pose_scores, keypoint_scores, keypoint_coords, min_pose_score=0.15, min_part_score=0.1)
             if frame_count >= 0:
                 i = 0
                 for pi in range(len(pose_scores)):
