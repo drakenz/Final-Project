@@ -1,10 +1,10 @@
 import os
 import numpy as np
 import face_recognition
-import pickle
 import cv2
 import paho.mqtt.client as mqtt
 from datetime import datetime, timedelta
+import time
 import glob
 
 import base64
@@ -125,6 +125,8 @@ def findFace():
 
 def sendPhotos():
     for file in glob.glob("unknown/*.jpg"):
+        time.sleep(0.2)
+        print(file)
         f = open(file, "rb")
         fileContent = f.read()
         byteArr = base64.encodebytes(fileContent)
@@ -146,20 +148,50 @@ def on_connect(client, userdata, flags, rc):
 def Approve(index):
     print("Approving user ", index)
 
-    files = []
+    unknownFiles = []
     for file in glob.glob("unknown/*.jpg"):
-        files.append(file)
+        unknownFiles.append(file)
+
+    knownFiles = []
+    for file in glob.glob("known/*.jpg"):
+        knownFiles.append(file)
 
     index = int(index)
     mahindex = 0
-    
-    for file in files:
+
+    for file in unknownFiles:
         if(mahindex == index):
             file = str(file)
-            newfile = file.replace("unknown\\", "")
-            print(newfile)
-            os.rename(file, "known\\" + newfile)  # DELETE IMAGE
+            #newfile = file.replace("unknown\\", "")
+            # print(newfile)
+            os.rename(file, "known\\" + str(len(knownFiles)) +
+                      '.jpg')  # DELETE IMAGE
 
+        mahindex += 1
+
+    fixfileNames()
+    client.publish("Door/Photos", "Done")
+
+
+def fixfileNames():
+    unknownFiles = []
+    for file in glob.glob("unknown/*.jpg"):
+        unknownFiles.append(file)
+
+    mahindex = 0
+    for file in unknownFiles:
+        os.rename(file, "unknown\\renaming" + str(mahindex) +
+                  '.jpg')
+        mahindex += 1
+
+    unknownFiles = []
+    for file in glob.glob("unknown/*.jpg"):
+        unknownFiles.append(file)
+
+    mahindex = 0
+    for file in unknownFiles:
+        os.rename(file, "unknown\\" + str(mahindex) +
+                  '.jpg')
         mahindex += 1
 
 
@@ -177,6 +209,9 @@ def Delete(index):
             os.remove(file)  # DELETE IMAGE
         mahindex += 1
 
+    fixfileNames()
+    client.publish("Door/Photos", "Done")
+
 
 def on_message(client, userdata, msg):
     if(msg.topic == 'Door/PIR'):
@@ -191,14 +226,17 @@ def on_message(client, userdata, msg):
         Delete(msg.payload.decode("utf-8"))
 
 
-broker_address = "192.168.1.19"
+broker_address = "d6d3031dcc0d4918a87f4ebcc4644e68.s1.eu.hivemq.cloud"
 
 client = mqtt.Client("DoorServer")  # create new instance
-client.username_pw_set(username="admin", password="admin")
+client.username_pw_set(username="hazem.moh98@gmail.com",
+                       password="HwPVV9fyN4CaYcs")
+
+client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
 
 client.on_connect = on_connect
 client.on_message = on_message
-client.connect(broker_address)
+client.connect(broker_address, port=8883)
 
 # client.loop()
 print("LOOPING!")
