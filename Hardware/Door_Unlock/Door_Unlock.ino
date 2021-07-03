@@ -1,6 +1,9 @@
 //Mqtt Data
 #include "EspMQTTClient.h"
 
+#include <Preferences.h>
+Preferences preferences;
+
 EspMQTTClient client(
   "Slow Internet Here",
   "Superman!",
@@ -25,8 +28,6 @@ const int PIRPIN = 23;
 // Create keypad object
 ErriezTTP229 ttp229;
 
-ICACHE_RAM_ATTR
-
 int pw = 1234;
 int key;
 int inpw;
@@ -43,6 +44,9 @@ void keyChange()
 void setup() {
   Serial.begin(115200);
 
+  preferences.begin("IR", false);
+  pw = preferences.getInt("Password");
+
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater();
   client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
@@ -54,6 +58,7 @@ void setup() {
   pinMode(Door_PIN, OUTPUT);
   pinMode(PIRPIN, INPUT);
   Serial.println("ESP is running!");
+  Serial.println(pw);
 }
 
 void onConnectionEstablished()
@@ -62,6 +67,9 @@ void onConnectionEstablished()
     if (payload == "1") {
       openDoor();
     }
+  });
+  client.subscribe("Door/Password", [](const String & payload) {
+    changePassword(payload.toInt());
   });
 }
 
@@ -74,6 +82,15 @@ void openDoor() {
 
   client.publish("Door/State", "0");
   digitalWrite(Door_PIN, LOW);
+
+  Serial.println(pw);
+}
+
+void changePassword(int newPassword) {
+  pw = newPassword;
+  preferences.putInt("Password", pw);
+
+  Serial.println(pw);
 }
 
 void loop() {
