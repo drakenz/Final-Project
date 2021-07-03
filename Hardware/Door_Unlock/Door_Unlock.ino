@@ -18,6 +18,14 @@ EspMQTTClient client(
 const int Door_PIN = 26;
 const int PIRPIN = 23;
 
+#define reed 13
+unsigned long StartTime;
+unsigned long CurrentTime;
+unsigned long ElapsedTime;
+bool prevsReed;
+bool currentReed;
+bool sentNotification;
+
 //keypad Data
 #include <ErriezTTP229.h>
 
@@ -57,6 +65,8 @@ void setup() {
 
   pinMode(Door_PIN, OUTPUT);
   pinMode(PIRPIN, INPUT);
+  pinMode(reed, INPUT);
+
   Serial.println("ESP is running!");
   Serial.println(pw);
 }
@@ -139,6 +149,21 @@ void loop() {
     Serial.print("PIR DETECTED MOVEMENT!");
   }
   prevpir = pir;
+
+  currentReed = digitalRead(reed);
+  if (!currentReed && prevsReed)
+  {
+    StartTime = millis();
+    sentNotification = false;
+  }
+  CurrentTime = millis();
+  ElapsedTime = CurrentTime - StartTime;
+  if (ElapsedTime > 5000 && !sentNotification) {
+    client.publish("Mobile/Notification", "You Forgot To Close the front door");
+    sentNotification = true;
+  }
+
   delay(10);
+  prevsReed = currentReed;
   client.loop();
 }

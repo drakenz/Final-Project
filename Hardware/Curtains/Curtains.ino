@@ -16,8 +16,8 @@ EspMQTTClient client(
 #define in2 27
 
 // Reed switches for stopping
-#define reed1  13 //Reed at motor 
-#define reed2  14 //Reed at pully
+#define reed1 13 //Reed at motor 
+#define reed2 14 //Reed at pully
 
 bool stopFlag = false;
 
