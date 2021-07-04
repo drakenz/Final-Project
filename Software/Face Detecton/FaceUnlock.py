@@ -10,8 +10,9 @@ import base64
 
 
 def findFace():
-    cap = cv2.VideoCapture("http://192.168.1.12:8080/video")
-
+    cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@192.168.1.111:554/stream2")
+    #                       http://192.168.1.12:8080/video
+    
     files = []
     for file in glob.glob("known/*.jpg"):
         files.append(file)
@@ -70,7 +71,7 @@ def findFace():
             #    #     first_match_index = matches.index(True)
             #    #     name = known_face_names[first_match_index]
             #    # Publish to MQTT server to open Door
-            #    client.publish("Door/State", "1")
+            #    client.publish("Door/Open", "1")
             #    cv2.destroyAllWindows()
             #    return
 
@@ -81,7 +82,7 @@ def findFace():
             if matches[best_match_index]:
                 name = known_face_names[best_match_index]
                 print("UNLOCKED DOOR TO ", name)
-                client.publish("Door/State", "1")
+                client.publish("Door/Open", "1")
                 cv2.destroyAllWindows()
                 return
 
