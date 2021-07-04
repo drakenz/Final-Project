@@ -1,82 +1,77 @@
-//Mqtt Data
+//MQTT Data
 #include "EspMQTTClient.h"
 
+EspMQTTClient client(
+  "Slow Internet Here",                                                   //SSID
+  "Superman!",                                                            //Password
+  "ashhomeassistantmqtt.duckdns.org",                                     //Broker IP
+  "homeassistant",                                                        //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",     //Broker Password
+  "Door Module",                                                          //Client Name
+  1883                                                                    //MQTT port
+);
+
+//Saved Preferences Data
 #include <Preferences.h>
 Preferences preferences;
 
-EspMQTTClient client(
-  "Slow Internet Here",
-  "Superman!",
-  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
-  "homeassistant",
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
-  "IR Module",     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
-);
-
 //Pins
-const int Door_PIN = 26;
-const int PIRPIN = 25;
+#define Door_PIN 26
+#define PIR_PIN 25
+#define REED_PIN 33
 
-#define reed 27
-unsigned long StartTime;
-unsigned long CurrentTime;
-unsigned long ElapsedTime;
-bool prevsReed;
-bool currentReed;
-bool sentNotification;
+//Reed Data
+int reedTimeout;
+bool reed;
 
 //keypad Data
-#include <ErriezTTP229.h>
+#include <Keypad.h>
 
-// TTP229 pin defines
-#define TTP229_SDO_PIN     16
-#define TTP229_SCL_PIN     4
+const byte ROWS = 4;
+const byte COLS = 3;
+char keys[ROWS][COLS] = {
+  {'1', '2', '3'},
+  {'4', '5', '6'},
+  {'7', '8', '9'},
+  {'c', '0', 'c'}
+};
+byte rowPins[ROWS] = {23, 22, 3, 21};
+byte colPins[COLS] = {19, 18, 5};
 
-// Create keypad object
-ErriezTTP229 ttp229;
+Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-int pw = 1234;
 int key;
-int inpw;
+int password = 1234;
+int currentPassword;
+int keypadTimeout = 200;
 
-int pir;
-int prevpir;
-
-int timeout = 200;
-void keyChange()
-{
-  ttp229.keyChange = true;
-}
+//PIR data
+bool currentPIR;
+bool previousPIR;
 
 void setup() {
   Serial.begin(115200);
 
+  pinMode(Door_PIN, OUTPUT);
+  pinMode(PIR_PIN, INPUT);
+  pinMode(REED_PIN, INPUT);
+
   preferences.begin("IR", false);
-  pw = preferences.getInt("Password");
+  password = preferences.getInt("Password");
 
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater();
   client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
 
-  ttp229.begin(TTP229_SCL_PIN, TTP229_SDO_PIN);
-  attachInterrupt(digitalPinToInterrupt(TTP229_SDO_PIN), keyChange, FALLING);
-
-
-  pinMode(Door_PIN, OUTPUT);
-  pinMode(PIRPIN, INPUT);
-  pinMode(reed, INPUT);
-
   Serial.println("ESP is running!");
-  Serial.println(pw);
+  Serial.println(password);
 }
 
 void onConnectionEstablished()
 {
-  client.subscribe("Door/State", [](const String & payload) {
-    if (payload == "1") {
+  client.subscribe("Door/Open", [](const String & payload) {
+    if (payload == "1")
       openDoor();
-    }
   });
   client.subscribe("Door/Password", [](const String & payload) {
     changePassword(payload.toInt());
@@ -85,85 +80,74 @@ void onConnectionEstablished()
 
 void openDoor() {
   Serial.println("Opening Door");
-  //client.publish("Door/State", "1");
+  client.publish("Door/State", "1");
   digitalWrite(Door_PIN, HIGH);
 
   delay(5000);
 
   client.publish("Door/State", "0");
   digitalWrite(Door_PIN, LOW);
-
-  Serial.println(pw);
 }
 
 void changePassword(int newPassword) {
-  pw = newPassword;
-  preferences.putInt("Password", pw);
+  password = newPassword;
+  preferences.putInt("Password", password);
 
-  Serial.println(pw);
+  Serial.println(password);
 }
 
 void loop() {
-  if (timeout > 0)
-    if (--timeout == 0) {
-      inpw = 0;
-      Serial.println("TIMED OUT");
-    }
+  //Check for keypad key pressed
+  char key = keypad.getKey();
+  if (key) {
+    keypadTimeout = 200;
+    if (key != 'c') {
+      key = int(key) - 48;
 
-  if (ttp229.keyChange) {
-    timeout = 200;
-    int key = ttp229.GetKey16();
-    if (key != 0) {
-      key -= 8;
-      if (key > 9) {
-        inpw = 0;
-        delay(100); //for serial monitor only 3ashan bttb3 kteer
-        Serial.print(key);
-        Serial.println("Cleared!");
-        return;
-      }
-
-      if (inpw != 0)
-        inpw *= 10;
-      inpw += key;
+      currentPassword *= 10;
+      currentPassword += key;
 
       Serial.print("Loop Prints : ");
-      Serial.println(inpw);
+      Serial.println(currentPassword);
 
-      if (inpw == pw) {
+      if (currentPassword == password) {
         openDoor();
-        inpw = 0;
+        currentPassword = 0;
         Serial.println("Unlocked");
       }
-
-      else if (inpw > 999) {
-        inpw = 0;
-        Serial.println("Try again");
-      }
+      if (currentPassword > 999)
+        currentPassword = 0;
     }
-    ttp229.keyChange = false;
+    else {
+      currentPassword = 0;
+      Serial.println("Keypad Cleared");
+    }
   }
-  pir = digitalRead(PIRPIN);
-  if (pir == 1 && prevpir == 0) {
-    client.publish("Door/PIR", "1");
-    Serial.print("PIR DETECTED MOVEMENT!");
-  }
-  prevpir = pir;
+  if (keypadTimeout > 0)
+    if (--keypadTimeout == 0) {
+      currentPassword = 0;
+      Serial.println("Keypad Cleared");
+    }
 
-  currentReed = digitalRead(reed);
-  if (!currentReed && prevsReed)
-  {
-    StartTime = millis();
-    sentNotification = false;
+  //PIR Motion Detection
+  currentPIR = digitalRead(PIR_PIN);
+  if (currentPIR && !previousPIR) {
+    client.publish("Door/PIR", "1");
+    Serial.println("PIR DETECTED MOVEMENT!");
   }
-  CurrentTime = millis();
-  ElapsedTime = CurrentTime - StartTime;
-  if (ElapsedTime > 5000 && !sentNotification) {
-    client.publish("Mobile/Notification", "You Forgot To Close the front door");
-    sentNotification = true;
-  }
+  previousPIR = currentPIR;
+
+  //Check if door left open with Reed
+  reed = digitalRead(REED_PIN);
+  if (reed)
+    reedTimeout = 1000;
+
+  if (reedTimeout > 0)
+    if (--reedTimeout == 0) {
+      Serial.println("Door Open");
+      client.publish("Mobile/Notification", "You Forgot To Close the front door");
+    }
 
   delay(10);
-  prevsReed = currentReed;
   client.loop();
 }
