@@ -16,9 +16,9 @@ EspMQTTClient client(
 
 //Pins
 const int Door_PIN = 26;
-const int PIRPIN = 23;
+const int PIRPIN = 25;
 
-#define reed 13
+#define reed 27
 unsigned long StartTime;
 unsigned long CurrentTime;
 unsigned long ElapsedTime;
