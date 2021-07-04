@@ -19,12 +19,8 @@ const int Door_PIN = 26;
 const int PIRPIN = 25;
 
 #define reed 27
-unsigned long StartTime;
-unsigned long CurrentTime;
-unsigned long ElapsedTime;
-bool prevsReed;
+unsigned long timer;
 bool currentReed;
-bool sentNotification;
 
 //keypad Data
 #include <ErriezTTP229.h>
@@ -146,24 +142,21 @@ void loop() {
   pir = digitalRead(PIRPIN);
   if (pir == 1 && prevpir == 0) {
     client.publish("Door/PIR", "1");
-    Serial.print("PIR DETECTED MOVEMENT!");
+    Serial.println("PIR DETECTED MOVEMENT!");
   }
   prevpir = pir;
 
   currentReed = digitalRead(reed);
-  if (!currentReed && prevsReed)
+  if (currentReed)
   {
-    StartTime = millis();
-    sentNotification = false;
+    timer = 1000;
   }
-  CurrentTime = millis();
-  ElapsedTime = CurrentTime - StartTime;
-  if (ElapsedTime > 5000 && !sentNotification) {
-    client.publish("Mobile/Notification", "You Forgot To Close the front door");
-    sentNotification = true;
-  }
+  if (timer > 0)
+    if (timer-- == 1) {
+      Serial.println("Door Open");
+      client.publish("Mobile/Notification", "You Forgot To Close the front door");
+    }
 
   delay(10);
-  prevsReed = currentReed;
   client.loop();
 }
