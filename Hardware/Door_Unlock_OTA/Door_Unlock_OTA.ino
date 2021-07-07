@@ -52,6 +52,9 @@ int keypadTimeout = 200;
 bool currentPIR;
 bool previousPIR;
 
+//Emergency Data
+bool emergency;
+
 void setup() {
   startOTA();
   Serial.begin(115200);
@@ -79,6 +82,12 @@ void onConnectionEstablished()
   });
   client.subscribe("Door/Password", [](const String & payload) {
     changePassword(payload.toInt());
+  });
+  client.subscribe("Emergency", [](const String & payload) {
+    if (payload == "1")
+      emergency = true;
+    else
+      emergency = false;
   });
 }
 
@@ -138,6 +147,8 @@ void loop() {
   currentPIR = digitalRead(PIR_PIN);
   if (currentPIR && !previousPIR) {
     client.publish("Door/PIR", "1");
+    if (emergency)
+      openDoor();
     Serial.println("PIR DETECTED MOVEMENT!");
   }
   previousPIR = currentPIR;
@@ -150,7 +161,7 @@ void loop() {
   if (reedTimeout > 0)
     if (--reedTimeout == 0) {
       Serial.println("Door Open");
-      client.publish("Mobile/Notification", "You Forgot To Close the front door");
+      client.publish("Mobile/Notification", "You Forgot To Close the front door!");
     }
 
   delay(10);

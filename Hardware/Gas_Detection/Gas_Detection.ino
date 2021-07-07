@@ -44,7 +44,7 @@ void loop() {
     Serial.println("Gas Detected!");
 
     //Send to Server that we have gas here!
-    client.publish("Gas", "Bedroom");
+    client.publish("Mobile/Notification", "Gas Detected in Bedroom");
 
   }
 

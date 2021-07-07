@@ -32,10 +32,13 @@ def findFace():
         files.append(file)
 
     unknown_face_encodings = []
-    for file in files:
-        img = face_recognition.load_image_file(file)
-        img_encoding = face_recognition.face_encodings(img)[0]
-        unknown_face_encodings.append(img_encoding)
+    try:
+        for file in files:
+            img = face_recognition.load_image_file(file)
+            img_encoding = face_recognition.face_encodings(img)[0]
+            unknown_face_encodings.append(img_encoding)
+    except:
+        print("Couldn't find face, skipping")
 
     count_number = len(unknown_face_encodings)
 
@@ -94,6 +97,7 @@ def findFace():
                 if unknown_face_distances.size != 0:
                     best_match_index = np.argmin(unknown_face_distances)
                     if unmatches[best_match_index] == False:
+                        client.publish("Mobile/Notification", "Unknown person detected at the front door!")
                         unknown_face_encodings.append(face_encoding)
                         fileName = 'unknown/' + str(
                             count_number) + '.jpg'
@@ -227,7 +231,7 @@ def on_message(client, userdata, msg):
 
 broker_address = "ashhomeassistantmqtt.duckdns.org"
 
-client = mqtt.Client("DoorServer")  # create new instance
+client = mqtt.Client("Door Server")  # create new instance
 client.username_pw_set(username="homeassistant",
                        password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")
 

@@ -1,26 +1,24 @@
 import pandas as pd
 import numpy as np
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 import tensorflow as tf
 import cv2
 import time
 import argparse
 import posenet
 from sklearn.preprocessing import StandardScaler, MinMaxScaler
-from keras import backend as K
+from tensorflow.python.keras import backend as K
 import os
 import paho.mqtt.client as mqtt
 
 def on_connect(client, userdata, flags, rc):
-    print("Connected with result code ", str(rc))
-    client.subscribe('Pose')
+    print("Connected to MQTT server with result code ", str(rc))
 
-broker_address = "d6d3031dcc0d4918a87f4ebcc4644e68.s1.eu.hivemq.cloud"
-client = mqtt.Client("PoseServer")  # create new instance
-client.username_pw_set(username="hazem.moh98@gmail.com", password="HwPVV9fyN4CaYcs")
-client.tls_set(tls_version=mqtt.ssl.PROTOCOL_TLS)
+broker_address = "ashhomeassistantmqtt.duckdns.org"
+client = mqtt.Client("Pose Server")  # create new instance
+client.username_pw_set(username="homeassistant", password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")
 client.on_connect = on_connect
-client.connect(broker_address, port=8883)
+client.connect(broker_address, port=1883)
 
 print(__file__)
 dirname = os.path.dirname(__file__)
@@ -40,7 +38,8 @@ column_names = ['pose', 'nose', 'nose_coordX', 'nose_coordY', 'L_eye', 'L_eye_co
                 'R_ankle_coordX', 'R_ankle_coordY']
 df = pd.DataFrame(columns=column_names)
 
-cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@aykalamcam.duckdns.org:554/stream2")
+#cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@aykalamcam.duckdns.org:554/stream2")
+cap = cv2.VideoCapture("rtsp://192.168.1.104:8080/h264_pcm.sdp")
 cap.set(3, 513)
 cap.set(4, 513)
 
@@ -117,12 +116,16 @@ with tf.Graph().as_default():
                         print("Sitting for: ",int(p_time), " Seconds" )
                         if (p_time >= 60):
                             print("Stand up or whatever!")
-                            client.publish("Pose", "1")
+                            client.publish("Mobile/Notification", "You have been still for too long, Stand up and move a little")
                             sitting = 0
                             label= "Stand up Man!!"
+                        if (p_time >= 120):
+                            client.publish("Mobile/Notification", "Person is too still, Initiating Emergency")
+                            client.publish("Emergency", "1")
                     else:
                         print("Case 3")
                         print("Hurray! You stood up")
+                        client.publish("Emergency", "0")
                         sitting = 0
 
                     print("Person ", i, ": ", pose_dict[int(it)])
