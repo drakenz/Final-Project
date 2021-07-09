@@ -132,7 +132,6 @@ with tf.Graph().as_default():
                     else:
                         print("Case 3")
                         print("Hurray! You stood up")
-                        client.publish("Emergency", "0")
                         sitting = 0
 
                     print("Person ", i, ": ", pose_dict[int(it)])
