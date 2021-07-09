@@ -5,14 +5,14 @@ import cv2
 import paho.mqtt.client as mqtt
 from datetime import datetime, timedelta
 import glob
-
 import base64
 
 
 def findFace():
-    cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@192.168.1.111:554/stream2")
+    cap = cv2.VideoCapture(
+        "rtsp://Kimo123:passwordgdeed@192.168.1.111:554/stream2")
     #                       http://192.168.1.12:8080/video
-    
+
     files = []
     for file in glob.glob("known/*.jpg"):
         files.append(file)
@@ -97,7 +97,8 @@ def findFace():
                 if unknown_face_distances.size != 0:
                     best_match_index = np.argmin(unknown_face_distances)
                     if unmatches[best_match_index] == False:
-                        client.publish("Mobile/Notification", "Unknown person detected at the front door!")
+                        client.publish(
+                            "Mobile/Notification", "Unknown person detected at the front door!")
                         unknown_face_encodings.append(face_encoding)
                         fileName = 'unknown/' + str(
                             count_number) + '.jpg'
@@ -229,8 +230,7 @@ def on_message(client, userdata, msg):
         Delete(msg.payload.decode("utf-8"))
 
 
-broker_address = "ashhomeassistantmqtt.duckdns.org"
-
+broker_address = "homeassistant.local"
 client = mqtt.Client("Door Server")  # create new instance
 client.username_pw_set(username="homeassistant",
                        password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")

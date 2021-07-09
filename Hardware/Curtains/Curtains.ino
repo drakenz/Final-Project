@@ -2,13 +2,13 @@
 #include "EspMQTTClient.h"
 
 EspMQTTClient client(
-  "Slow Internet Here",
-  "Superman!",
-  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
-  "homeassistant",
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
-  "IR Module",     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
+  "Slow Internet Here",                                               //SSID
+  "Superman!",                                                        //Password
+  "192.168.1.10",                                                     //Broker IP
+  "homeassistant",                                                    //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
+  "Curtains Module",                                                  //Client Name
+  1883                                                                //MQTT port
 );
 
 // Motor pin definitions
@@ -16,30 +16,35 @@ EspMQTTClient client(
 #define in2 27
 
 // Reed switches for stopping
-#define reed1 13 //Reed at motor 
+#define reed1 13 //Reed at motor
 #define reed2 14 //Reed at pully
 
 bool stopFlag = false;
 
-void moves(bool dir) {
-  if (dir) { //Moves towards motor
+void moveCurtain(bool dir)
+{
+  if (dir)
+  { //Moves towards motor
     digitalWrite(in1, HIGH);
     digitalWrite(in2, LOW);
     while (digitalRead(reed1) == false) //reed1 is near the motor
     {
-      if (stopFlag) {
+      if (stopFlag)
+      {
         stopFlag = false;
         break;
       }
     }
     client.loop();
   }
-  else { // Moves towards pully
+  else
+  { // Moves towards pully
     digitalWrite(in1, LOW);
     digitalWrite(in2, HIGH);
     while (digitalRead(reed2) == false) //reed2 is near the pully
     {
-      if (stopFlag) {
+      if (stopFlag)
+      {
         stopFlag = false;
         break;
       }
@@ -52,18 +57,22 @@ void moves(bool dir) {
 
 void onConnectionEstablished()
 {
-  client.subscribe("Curtains/open", [](const String & payload) {
-    moves(true);
+  client.subscribe("Curtains/open", [](const String & payload)
+  {
+    moveCurtain(true);
   });
-  client.subscribe("Curtains/close", [](const String & payload) {
-    moves(false);
+  client.subscribe("Curtains/close", [](const String & payload)
+  {
+    moveCurtain(false);
   });
-  client.subscribe("Curtains/stop", [](const String & payload) {
+  client.subscribe("Curtains/stop", [](const String & payload)
+  {
     stopFlag = true;
   });
 }
 
-void setup() {
+void setup()
+{
   Serial.begin(115200);
 
   pinMode(in1, OUTPUT);
@@ -79,6 +88,7 @@ void setup() {
   Serial.println("ESP is running!");
 }
 
-void loop() {
+void loop()
+{
   client.loop();
 }

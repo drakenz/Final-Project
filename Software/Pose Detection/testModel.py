@@ -11,12 +11,15 @@ from tensorflow.python.keras import backend as K
 import os
 import paho.mqtt.client as mqtt
 
+
 def on_connect(client, userdata, flags, rc):
     print("Connected to MQTT server with result code ", str(rc))
 
-broker_address = "ashhomeassistantmqtt.duckdns.org"
-client = mqtt.Client("Pose Server")  # create new instance
-client.username_pw_set(username="homeassistant", password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")
+
+broker_address = "homeassistant.local"
+client = mqtt.Client("Pose Server")
+client.username_pw_set(username="homeassistant",
+                       password="ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el")
 client.on_connect = on_connect
 client.connect(broker_address, port=1883)
 
@@ -55,12 +58,14 @@ with tf.Graph().as_default():
         output_stride = model_cfg['output_stride']
         while True:
             try:
-                input_image, display_image, output_scale = posenet.read_cap(cap, scale_factor=0.7125, output_stride=output_stride)
+                input_image, display_image, output_scale = posenet.read_cap(
+                    cap, scale_factor=0.7125, output_stride=output_stride)
             except Exception as e:
                 print(e)
                 continue
-            
-            heatmaps_result, offsets_result, displacement_fwd_result, displacement_bwd_result = sess.run(model_outputs, feed_dict={'image:0': input_image})
+
+            heatmaps_result, offsets_result, displacement_fwd_result, displacement_bwd_result = sess.run(
+                model_outputs, feed_dict={'image:0': input_image})
 
             pose_scores, keypoint_scores, keypoint_coords = posenet.decode_multi.decode_multiple_poses(
                 heatmaps_result.squeeze(axis=0),
@@ -90,7 +95,7 @@ with tf.Graph().as_default():
 
                 poses = len(df.index)
                 prediction = []
-                x=df.values
+                x = df.values
                 x = np.asarray(x)
                 data_new = data
                 data_new = np.append(data_new, x, axis=0)
@@ -102,7 +107,7 @@ with tf.Graph().as_default():
                     x = x.reshape(-1, 52)
                     prediction.append(model_mlp.predict(x))
 
-                i=1
+                i = 1
                 for it in prediction:
                     label = pose_dict[int(it)]
 
@@ -113,14 +118,16 @@ with tf.Graph().as_default():
                     elif label == "Sitting" and sitting == 1:
                         print("Case 2")
                         p_time = time.time() - s_time
-                        print("Sitting for: ",int(p_time), " Seconds" )
+                        print("Sitting for: ", int(p_time), " Seconds")
                         if (p_time >= 60):
                             print("Stand up or whatever!")
-                            client.publish("Mobile/Notification", "You have been still for too long, Stand up and move a little")
+                            client.publish(
+                                "Mobile/Notification", "You have been still for too long, Stand up and move a little")
                             sitting = 0
-                            label= "Stand up Man!!"
+                            label = "Stand up Man!!"
                         if (p_time >= 120):
-                            client.publish("Mobile/Notification", "Person is too still, Initiating Emergency")
+                            client.publish(
+                                "Mobile/Notification", "Person is too still, Initiating Emergency")
                             client.publish("Emergency", "1")
                     else:
                         print("Case 3")
@@ -129,9 +136,10 @@ with tf.Graph().as_default():
                         sitting = 0
 
                     print("Person ", i, ": ", pose_dict[int(it)])
-                    cv2.putText(display_image, label, (int(df.at[i-1, 'R_hip_coordX' ]), int(df.at[i-1, 'R_hip_coordY'])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2,cv2.LINE_AA)
+                    cv2.putText(display_image, label, (int(df.at[i-1, 'R_hip_coordX']), int(
+                        df.at[i-1, 'R_hip_coordY'])), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2, cv2.LINE_AA)
                     print()
-                    i+=1
+                    i += 1
 
             cv2.imshow('pose-detection', display_image)
             frame_count += 1

@@ -1,40 +1,30 @@
-#include "ESP32_IR_Remote.h"
+//MQTT Data
 #include "EspMQTTClient.h"
+EspMQTTClient client(
+  "Slow Internet Here",                                               //SSID
+  "Superman!",                                                        //Password
+  "192.168.1.10",                                                     //Broker IP
+  "homeassistant",                                                    //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
+  "IR Module",                                                        //Client Name
+  1883                                                                //MQTT port
+);
 
-//For clearing NVS
-//#include <nvs_flash.h>
-//#include <esp_wifi.h>
-
+//Saved Prefrences
 #include <Preferences.h>
 Preferences preferences;
 
-EspMQTTClient client(
-  "Slow Internet Here",
-  "Superman!",
-  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
-  "homeassistant",
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
-  "IR Module",     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
-);
-
-//Pins and IR init
-const int RECV_PIN = 17;
-const int SEND_PIN = 2;
-
+//Remote data
+#include "ESP32_IR_Remote.h"
 ESP32_IRrecv irrecv;
+
+//Pins
+#define RECV_PIN 17
+#define SEND_PIN 2
 
 //Data Array
 unsigned int IRData[11][500];
 int codeLen[11];
-
-//Reading data at INIT
-bool readData = false;
-int myIndex;
-
-//Sending data with IR
-bool sendData = false;
-int sendIndex;
 
 void setup() {
   Serial.begin(115200);
@@ -53,14 +43,14 @@ void onConnectionEstablished()
 {
   client.subscribe("IR/Init", [](const String & payload) {
     if (payload != "Done") {
-      readData = true;
-      myIndex = payload.toInt();
+      ReceiveIR(payload.toInt());
+      client.publish("IR/Init", "Done");
+      printArr();
     }
     Serial.println(payload);
   });
   client.subscribe("IR/Send", [](const String & payload) {
-    sendData = true;
-    sendIndex = payload.toInt();
+    SendIR(payload.toInt());
     Serial.println(payload);
   });
   client.subscribe("IR/Save", [](const String & payload) {
@@ -69,43 +59,35 @@ void onConnectionEstablished()
   client.subscribe("IR/Load", [](const String & payload) {
     loadData();
   });
-  /*
-    client.subscribe("IR/Print", [](const String & payload) {
-    printArr();
-    });
-    client.subscribe("IR/Clear", [](const String & payload) {
-    clearPrefs();
-    });
-  */
 }
 
-void ReceiveIR() {
+void ReceiveIR(int index) {
   Serial.println("Ready to receive!");
   irrecv.ESP32_IRrecvPIN(RECV_PIN, 0); //channel 0 so it can use the full memory of the channels
   irrecv.initReceive(); //setup the ESP32 to Receive IR code
 
   while (true) {
-    codeLen[myIndex] = 0;
-    codeLen[myIndex] = irrecv.readIR(IRData[myIndex], sizeof(IRData[myIndex]));
-    if (codeLen[myIndex] > 6) {
+    codeLen[index] = 0;
+    codeLen[index] = irrecv.readIR(IRData[index], sizeof(IRData[index]));
+    if (codeLen[index] > 6) {
       break;
     }
   }
   Serial.print("Recieved data with RAW code length: ");
-  Serial.println(codeLen[myIndex]);
+  Serial.println(codeLen[index]);
 
   Serial.print("At Index : ");
-  Serial.println(myIndex);
+  Serial.println(index);
   irrecv.stopIR(); //uninstall the RMT channel so it can be reused for Receiving IR or send IR
 }
 
-void SendIR() {
+void SendIR(int index) {
   Serial.println("Sending now!");
 
   irrecv.ESP32_IRsendPIN(SEND_PIN, 0); //channel 0 so it can use the full memory of the channels
   irrecv.initSend(); //setup the ESP32 to send IR code
   delay(1000);
-  irrecv.sendIR(IRData[sendIndex], codeLen[sendIndex]);
+  irrecv.sendIR(IRData[index], codeLen[index]);
   delay(1000);
 
   Serial.println("Data sent!");
@@ -186,26 +168,10 @@ void loadData()
 }
 
 void clearPrefs() {
-  //To clear the NVS partition (Not recommended)
-  //nvs_flash_erase(); // erase the NVS partition and...
-  //nvs_flash_init(); // initialize the NVS partition.
-  //esp_wifi_clear_fast_connect(); //Wifi stores data in nvs
-
-  //Remove all preferences under the opened namespace
   preferences.clear();
   Serial.println("Cleared!");
 }
 
 void loop() {
-  if (readData) {
-    readData = false;
-    ReceiveIR();
-    client.publish("IR/Init", "Done");
-    printArr();
-  }
-  if (sendData) {
-    sendData = false;
-    SendIR();
-  }
   client.loop();
 }

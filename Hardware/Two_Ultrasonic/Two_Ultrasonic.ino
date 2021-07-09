@@ -1,46 +1,45 @@
+//MQTT Data
 #include "EspMQTTClient.h"
-
 EspMQTTClient client(
-  "Slow Internet Here",
-  "Superman!",
-  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
-  "homeassistant",
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
-  "IR Module",     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
+  "Slow Internet Here",                                               //SSID
+  "Superman!",                                                        //Password
+  "192.168.1.10",                                                     //Broker IP
+  "homeassistant",                                                    //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
+  "Room Entry Module",                                                //Client Name
+  1883                                                                //MQTT port
 );
 
-const int trigPinLe = 12;
-const int echoPinLe = 14;
+// Ultrasonic Pins
+#define TRIGGER_LEFT_PIN 12
+#define ECHO_LEFT_PIN 14
 
-const int trigPinRi = 27;
-const int echoPinRi = 26;
+#define TRIGGER_RIGHT_PIN 27
+#define ECHO_RIGHT_PIN 26
 
-int distanceLe;
-int distanceRi;
-
-int nppl;
-int lefttime;
-int righttime;
+// Ultrasonic Values
+int leftDistance;
+int rightDistance;
+int leftTime;
+int rightTime;
+int numberOfPeople;
 
 void setup()
 {
-  pinMode(trigPinLe, OUTPUT);
-  pinMode(echoPinLe, INPUT);
-  pinMode(trigPinRi, OUTPUT);
-  pinMode(echoPinRi, INPUT);
   Serial.begin(115200);
 
-  // Optionnal functionnalities of EspMQTTClient :
+  pinMode(TRIGGER_LEFT_PIN, OUTPUT);
+  pinMode(ECHO_LEFT_PIN, INPUT);
+  pinMode(TRIGGER_RIGHT_PIN, OUTPUT);
+  pinMode(ECHO_RIGHT_PIN, INPUT);
+
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
   client.enableHTTPWebUpdater(); // Enable the web updater. User and password default to values of MQTTUsername and MQTTPassword. These can be overrited with enableHTTPWebUpdater("user", "password").
   client.enableLastWillMessage("TestClient/lastwill", "I am going offline");  // You can activate the retain flag by setting the third parameter to true
-  
 }
 
 void onConnectionEstablished()
 {
-  // Subscribe to "mytopic/test" and display received message to Serial
   client.subscribe("pir/state", [](const String & payload) {
     Serial.println(payload);
   });
@@ -49,67 +48,69 @@ void onConnectionEstablished()
 
 int readultra(bool whichone) { // 1 for left 0 for right
   if (whichone) {
-    digitalWrite(trigPinLe, LOW);
+    digitalWrite(TRIGGER_LEFT_PIN, LOW);
     delayMicroseconds(2);
 
-    digitalWrite(trigPinLe, HIGH);
+    digitalWrite(TRIGGER_LEFT_PIN, HIGH);
     delayMicroseconds(10);
-    digitalWrite(trigPinLe, LOW);
+    digitalWrite(TRIGGER_LEFT_PIN, LOW);
 
-    int duration = pulseIn(echoPinLe, HIGH);
+    int duration = pulseIn(ECHO_LEFT_PIN, HIGH);
     return duration * 0.017;
   }
-  digitalWrite(trigPinRi, LOW);
+  digitalWrite(TRIGGER_RIGHT_PIN, LOW);
   delayMicroseconds(2);
 
-  digitalWrite(trigPinRi, HIGH);
+  digitalWrite(TRIGGER_RIGHT_PIN, HIGH);
   delayMicroseconds(10);
-  digitalWrite(trigPinRi, LOW);
+  digitalWrite(TRIGGER_RIGHT_PIN, LOW);
 
-  int duration = pulseIn(echoPinRi, HIGH);
+  int duration = pulseIn(ECHO_RIGHT_PIN, HIGH);
   return duration * 0.017;
 }
 
 
 void loop() {
-  distanceLe = readultra(1);
+  leftDistance = readultra(1);
   //delay(10);
-  distanceRi = readultra(0);
+  rightDistance = readultra(0);
 
-  if (distanceLe < 80)
-    lefttime = 25;
-  if (distanceRi < 80)
-    righttime = 25;
+  if (leftDistance < 80)
+    leftTime = 25;
+  if (rightDistance < 80)
+    rightTime = 25;
 
-
-  if (lefttime > 0 && righttime > 0 && lefttime > righttime) {
-    nppl++;
+  // Someone Entered
+  if (leftTime > 0 && rightTime > 0 && leftTime > rightTime) {
+    numberOfPeople++;
     client.publish("pir/state", "on");
 
-    lefttime = 0;
-    righttime = 0;
+    leftTime = 0;
+    rightTime = 0;
   }
 
-  if (lefttime > 0 && righttime > 0 && righttime > lefttime) {
-    if (nppl > 0)
-      nppl--;
-    if (nppl == 0)
+  // Someone Left
+  if (leftTime > 0 && rightTime > 0 && rightTime > leftTime) {
+    if (numberOfPeople > 0)
+      numberOfPeople--;
+    if (numberOfPeople == 0)
       client.publish("pir/state", "off");
 
-    lefttime = 0;
-    righttime = 0;
+    leftTime = 0;
+    rightTime = 0;
   }
 
-  if (lefttime > 0)
-    lefttime--;
-  if (righttime > 0)
-    righttime--;
+  // Time for entery detection
+  if (leftTime > 0)
+    leftTime--;
+  if (rightTime > 0)
+    rightTime--;
 
   Serial.print("Left : ");
-  Serial.print(distanceLe);
+  Serial.print(leftDistance);
   Serial.print("\tRight : ");
-  Serial.print(distanceRi);
-  Serial.print("\t Humans :");
-  Serial.println(nppl);
+  Serial.print(rightDistance);
+  Serial.print("\t Number Of People :");
+  Serial.println(numberOfPeople);
   client.loop();
 }

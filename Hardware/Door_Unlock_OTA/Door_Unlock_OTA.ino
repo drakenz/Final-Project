@@ -5,13 +5,13 @@
 #include "EspMQTTClient.h"
 
 EspMQTTClient client(
-  "Slow Internet Here",                                                   //SSID
-  "Superman!",                                                            //Password
-  "ashhomeassistantmqtt.duckdns.org",                                     //Broker IP
-  "homeassistant",                                                        //Broker Username
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",     //Broker Password
-  "Door Module",                                                          //Client Name
-  1883                                                                    //MQTT port
+  "Slow Internet Here",                                               //SSID
+  "Superman!",                                                        //Password
+  "192.168.1.10",                                                     //Broker IP
+  "homeassistant",                                                    //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
+  "Door Module",                                                      //Client Name
+  1883                                                                //MQTT port
 );
 
 //Saved Preferences Data
@@ -55,7 +55,8 @@ bool previousPIR;
 //Emergency Data
 bool emergency;
 
-void setup() {
+void setup()
+{
   startOTA();
   Serial.begin(115200);
 
@@ -76,14 +77,17 @@ void setup() {
 
 void onConnectionEstablished()
 {
-  client.subscribe("Door/Open", [](const String & payload) {
+  client.subscribe("Door/Open", [](const String & payload)
+  {
     if (payload == "1")
       openDoor();
   });
-  client.subscribe("Door/Password", [](const String & payload) {
+  client.subscribe("Door/Password", [](const String & payload)
+  {
     changePassword(payload.toInt());
   });
-  client.subscribe("Emergency", [](const String & payload) {
+  client.subscribe("Emergency", [](const String & payload)
+  {
     if (payload == "1")
       emergency = true;
     else
@@ -91,7 +95,8 @@ void onConnectionEstablished()
   });
 }
 
-void openDoor() {
+void openDoor()
+{
   Serial.println("Opening Door");
   client.publish("Door/State", "1");
   digitalWrite(Door_PIN, HIGH);
@@ -102,20 +107,24 @@ void openDoor() {
   digitalWrite(Door_PIN, LOW);
 }
 
-void changePassword(int newPassword) {
+void changePassword(int newPassword)
+{
   password = newPassword;
   preferences.putInt("Password", password);
 
   Serial.println(password);
 }
 
-void loop() {
+void loop()
+{
   delay(1);
   //Check for keypad key pressed
   char key = keypad.getKey();
-  if (key) {
+  if (key)
+  {
     keypadTimeout = 200;
-    if (key != 'c') {
+    if (key != 'c')
+    {
       key = int(key) - 48;
 
       currentPassword *= 10;
@@ -124,7 +133,8 @@ void loop() {
       Serial.print("Loop Prints : ");
       Serial.println(currentPassword);
 
-      if (currentPassword == password) {
+      if (currentPassword == password)
+      {
         openDoor();
         currentPassword = 0;
         Serial.println("Unlocked");
@@ -132,20 +142,23 @@ void loop() {
       if (currentPassword > 999)
         currentPassword = 0;
     }
-    else {
+    else
+    {
       currentPassword = 0;
       Serial.println("Keypad Cleared");
     }
   }
   if (keypadTimeout > 0)
-    if (--keypadTimeout == 0) {
+    if (--keypadTimeout == 0)
+    {
       currentPassword = 0;
       Serial.println("Keypad Cleared");
     }
 
   //PIR Motion Detection
   currentPIR = digitalRead(PIR_PIN);
-  if (currentPIR && !previousPIR) {
+  if (currentPIR && !previousPIR)
+  {
     client.publish("Door/PIR", "1");
     if (emergency)
       openDoor();
@@ -159,7 +172,8 @@ void loop() {
     reedTimeout = 1000;
 
   if (reedTimeout > 0)
-    if (--reedTimeout == 0) {
+    if (--reedTimeout == 0)
+    {
       Serial.println("Door Open");
       client.publish("Mobile/Notification", "You Forgot To Close the front door!");
     }

@@ -9,18 +9,18 @@
 Preferences preferences;
 
 EspMQTTClient client(
-  "Slow Internet Here",
-  "Superman!",
-  "ashhomeassistantmqtt.duckdns.org",  // MQTT Broker server ip
-  "homeassistant",
-  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el",
-  "Room Module",     // Client name that uniquely identify your device
-  1883              // The MQTT port, default to 1883. this line can be omitted
+  "Slow Internet Here",                                               //SSID
+  "Superman!",                                                        //Password
+  "192.168.1.10",                                                     //Broker IP
+  "homeassistant",                                                    //Broker Username
+  "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
+  "IR Module",                                                       //Client Name
+  1883                                                                //MQTT port
 );
 
 //Pins and IR init
-const int RECV_PIN = 17;
-const int SEND_PIN = 2;
+#define RECV_PIN 17
+#define SEND_PIN 2
 
 ESP32_IRrecv irrecv;
 
@@ -37,14 +37,13 @@ bool sendData = false;
 int sendIndex;
 
 //rest of room
-const int trigPinRi = 14;
-const int echoPinRi = 12;
+#define trigPinRi 14
+#define echoPinRi 12
 
-const int trigPinLe = 27;
-const int echoPinLe = 26;
+#define trigPinLe 27
+#define echoPinLe 26
 
-const int switchPin = 25;
-//const int ledDpin = 33;
+#define switchPin 25
 
 // defines variables
 //long durationLe;
@@ -78,7 +77,7 @@ void setup() {
   pinMode(trigPinRi, OUTPUT);
   pinMode(echoPinRi, INPUT);
   pinMode(switchPin, OUTPUT);
-  
+
   Serial.begin(115200);
   delay(10);
   preferences.begin("IR", false);
@@ -133,16 +132,16 @@ void onConnectionEstablished()
 
   client.subscribe("smorttv/payload", [](const String & payload) {
     //Serial.println(payload);
-      if(payload=="0"){
+    if (payload == "0") {
       digitalWrite(switchPin, HIGH);//off
-      client.publish("smorttv/state","0");
+      client.publish("smorttv/state", "0");
       switchtime = 0;
-  }
-  else if(payload=="1"){
+    }
+    else if (payload == "1") {
       digitalWrite(switchPin, LOW);//on
-      client.publish("smorttv/state","1");
+      client.publish("smorttv/state", "1");
       switchtime = 1000;
-  }
+    }
   });
 }
 
@@ -290,7 +289,7 @@ int readultra(bool whichone) { // 1 for left 0 for right
 bool alrdysent = 0;
 
 void loop() {
-  h:
+h:
   distanceLe = readultra(1);
   delay(10);
   distanceRi = readultra(0);
@@ -306,7 +305,7 @@ void loop() {
     client.publish("pir/state", "on");
     client.publish("pir/count", String(nppl));
     digitalWrite(switchPin, LOW);
-    client.publish("smorttv/state","1");
+    client.publish("smorttv/state", "1");
     switchtime = 1000;//time applin. is on to make sure no one is coming back
     alrdysent = 0;
     lefttime = 0;
@@ -317,7 +316,7 @@ void loop() {
   if (lefttime > 0 && righttime > 0 && righttime > lefttime) {
     if (nppl > 0)
       nppl--;
-    if (nppl == 0){
+    if (nppl == 0) {
       client.publish("pir/state", "off");
       client.publish("pir/count", String(nppl));
     }
@@ -330,26 +329,26 @@ void loop() {
     lefttime--;
   if (righttime > 0)
     righttime--;
-  if(switchtime > 0 && nppl == 0){
+  if (switchtime > 0 && nppl == 0) {
     switchtime--;
   }
-  if(switchtime == 0 && nppl == 0 && !alrdysent){
+  if (switchtime == 0 && nppl == 0 && !alrdysent) {
     digitalWrite(switchPin, HIGH);
-    client.publish("smorttv/state","0");
+    client.publish("smorttv/state", "0");
     alrdysent = 1;
   }
 
-   Serial.print("Left : ");
-   Serial.print(lefttime);
-   Serial.print("\tRight : ");
-   Serial.print(righttime);
-   Serial.print("\t Humans :");
-   Serial.println(nppl);
-   Serial.print("switchtime : ");
-   Serial.println(switchtime);
-   
+  Serial.print("Left : ");
+  Serial.print(lefttime);
+  Serial.print("\tRight : ");
+  Serial.print(righttime);
+  Serial.print("\t Humans :");
+  Serial.println(nppl);
+  Serial.print("switchtime : ");
+  Serial.println(switchtime);
 
-  
+
+
   if (readData) {
     readData = false;
     ReceiveIR();
