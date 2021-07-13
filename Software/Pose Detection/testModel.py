@@ -41,8 +41,8 @@ column_names = ['pose', 'nose', 'nose_coordX', 'nose_coordY', 'L_eye', 'L_eye_co
                 'R_ankle_coordX', 'R_ankle_coordY']
 df = pd.DataFrame(columns=column_names)
 
-#cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@aykalamcam.duckdns.org:554/stream2")
-cap = cv2.VideoCapture("rtsp://192.168.1.104:8080/h264_pcm.sdp")
+cap = cv2.VideoCapture("rtsp://Kimo123:passwordgdeed@192.168.1.111:554/stream2")
+#cap = cv2.VideoCapture("rtsp://192.168.1.104:8080/h264_pcm.sdp")
 cap.set(3, 513)
 cap.set(4, 513)
 
@@ -119,13 +119,13 @@ with tf.Graph().as_default():
                         print("Case 2")
                         p_time = time.time() - s_time
                         print("Sitting for: ", int(p_time), " Seconds")
-                        if (p_time >= 60):
+                        if (p_time == 60):
                             print("Stand up or whatever!")
                             client.publish(
                                 "Mobile/Notification", "You have been still for too long, Stand up and move a little")
-                            sitting = 0
+
                             label = "Stand up Man!!"
-                        if (p_time >= 120):
+                        if (p_time == 120):
                             client.publish(
                                 "Mobile/Notification", "Person is too still, Initiating Emergency")
                             client.publish("Emergency", "1")
