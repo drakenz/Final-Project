@@ -3,7 +3,7 @@
 float ADC;
 float Voltage;
 float Current;
-float Offset = 1.64;
+float Offset = 1.60;
 
 void setup()
 {
@@ -13,11 +13,11 @@ void setup()
 void loop()
 {
   ADC = analogRead(ANALOG_CHANNEL_PIN);
-  Voltage = (3.78 / 4095) * ADC;
+  Voltage = (2.78 / 4095) * ADC;
 
   //current --> [reading-offset]*1000/(mV/Amp)
   Current = (Voltage - Offset) / 0.066;
-  if (abs(Current) > 0.136)
+  if (abs(Current) > 0.2)
   {
     Serial.print("   Voltage = ");
     Serial.print(Voltage);

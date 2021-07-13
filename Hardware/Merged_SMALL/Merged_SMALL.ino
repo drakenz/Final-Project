@@ -7,7 +7,7 @@ EspMQTTClient client(
   "192.168.1.10",                                                     //Broker IP
   "homeassistant",                                                    //Broker Username
   "ahhah9Mio6Oingaeweithihohsh0ieGhai4cua0yi9Xah0ya4poY3aeC4ozei6el", //Broker Password
-  "Curtains Module",                                                  //Client Name
+  "Merged Module 2",                                                  //Client Name
   1883                                                                //MQTT port
 );
 
@@ -20,6 +20,22 @@ EspMQTTClient client(
 #define reed2 13 //Reed at pully
 
 bool stopFlag = false;
+
+//Moisture
+#define MOISTURE_SENSOR_PIN 32
+#define RELAY_PIN 25
+
+//Moisture variables
+int minWaterPercent = 20;
+int value;
+
+//ACS
+#define ANALOG_CHANNEL_PIN 12
+
+float ADC;
+float Voltage;
+float Current;
+float Offset = 1.60;
 
 void moveCurtain(bool dir)
 {
@@ -74,6 +90,7 @@ void onConnectionEstablished()
 void setup()
 {
   Serial.begin(115200);
+  digitalWrite(RELAY_PIN, HIGH);
 
   pinMode(in1, OUTPUT);
   pinMode(in2, OUTPUT);
@@ -81,8 +98,12 @@ void setup()
   pinMode(reed1, INPUT);
   pinMode(reed2, INPUT);
 
+  pinMode(MOISTURE_SENSOR_PIN, OUTPUT);
+  pinMode(RELAY_PIN, OUTPUT);
+
+  pinMode(ANALOG_CHANNEL_PIN, INPUT);
+
   client.enableDebuggingMessages(); // Enable debugging messages sent to serial output
-  client.enableHTTPWebUpdater();
   client.enableLastWillMessage("TestClient/lastwill", "I am going offline");
 
   Serial.println("ESP is running!");
@@ -90,5 +111,49 @@ void setup()
 
 void loop()
 {
+  //Moisture
+  value = analogRead(MOISTURE_SENSOR_PIN);
+  value = map(value, 4095, 450, 0, 100);
+
+
+
+
+  /*
+    //send to home ass value percentage
+    //client.publish("Moist/percent", (String)value);
+  */
+
+  Serial.print("\t\tValue: ");
+  Serial.print(value);
+
+  Serial.print("\t\tMin: ");
+  Serial.println(minWaterPercent);
+
+  if (value < minWaterPercent)
+  {
+    digitalWrite(RELAY_PIN, LOW);
+    delay(2000);
+    digitalWrite(RELAY_PIN, HIGH);
+  }
+
+  //ACS
+  ADC = analogRead(ANALOG_CHANNEL_PIN);
+  Voltage = (2.78 / 4095) * ADC;
+
+  //current --> [reading-offset]*1000/(mV/Amp)
+  Current = (Voltage - Offset) / 0.066;
+  if (abs(Current) > 0.2)
+  {
+    Serial.print("   Voltage = ");
+    Serial.print(Voltage);
+    Serial.print("V  ");
+    Serial.print("Current = ");
+    Serial.print(Current);
+    Serial.println(" Amp");
+  }
+  else
+  {
+    Serial.println("Zero Amp");
+  }
   client.loop();
 }
