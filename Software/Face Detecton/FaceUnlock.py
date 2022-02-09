@@ -10,7 +10,7 @@ import base64
 
 def findFace():
     cap = cv2.VideoCapture(
-        "rtsp://Kimo123:passwordgdeed@192.168.1.111:554/stream2")
+        "rtspcamlink to be entered")
     #                       http://192.168.1.12:8080/video
 
     files = []
